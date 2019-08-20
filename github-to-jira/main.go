@@ -66,8 +66,7 @@ func processOneRepository(args syncArgs, repo *github.Repository) error {
 		issues, response, err := args.githubClient.Issues.ListByRepo(
 			context.Background(), args.githubOrg, *repo.Name, &opts)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to list issues for %s: %s\n", repo, err)
-			os.Exit(1)
+			return fmt.Errorf("Failed to list issues for %s: %s\n", repo, err)
 		}
 
 		if len(issues) == 0 {
@@ -146,8 +145,7 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 	newJiraIssue, response, err := args.jiraClient.Issue.Create(issueParams)
 	if err != nil {
 		text, _ := ioutil.ReadAll(response.Body)
-		fmt.Fprintf(os.Stderr, "Failed to create issue: %s\n%s\n", err, text)
-		os.Exit(1)
+		return fmt.Errorf("Failed to create issue: %s\n%s\n", err, text)
 	}
 	fmt.Printf("CREATED %s %s/browse/%s\n",
 		newJiraIssue.Key,
