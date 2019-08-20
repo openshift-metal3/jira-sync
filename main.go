@@ -53,92 +53,107 @@ func processAllRepositories(args syncArgs, callback callback) error {
 
 func processOneRepository(args syncArgs, repo *github.Repository) error {
 
-	ghIssueQueryOpts := github.IssueListByRepoOptions{
+	opts := github.IssueListByRepoOptions{
 		State: "open",
 	}
 	if args.githubLabel != "" {
-		ghIssueQueryOpts.Labels = append(ghIssueQueryOpts.Labels, args.githubLabel)
-	}
-
-	issues, _, err := args.githubClient.Issues.ListByRepo(
-		context.Background(), args.githubOrg, *repo.Name, &ghIssueQueryOpts)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to list issues for %s: %s\n", repo, err)
-		os.Exit(1)
+		opts.Labels = append(opts.Labels, args.githubLabel)
 	}
 
 	fmt.Printf("\n%s\n", *repo.Name)
 
-	if len(issues) == 0 {
-		fmt.Printf("no issues\n")
+	for {
+		issues, response, err := args.githubClient.Issues.ListByRepo(
+			context.Background(), args.githubOrg, *repo.Name, &opts)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to list issues for %s: %s\n", repo, err)
+			os.Exit(1)
+		}
+
+		if len(issues) == 0 {
+			fmt.Printf("no issues\n")
+			break
+		}
+
+		for _, ghIssue := range issues {
+			if err = processOneIssue(args, repo, ghIssue); err != nil {
+				return fmt.Errorf("Failed to process repo %s: %s", *repo.Name, err)
+			}
+		}
+
+		if response.NextPage == 0 {
+			break
+		}
+		opts.Page = response.NextPage
+	}
+
+	return nil
+}
+
+func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Issue) error {
+	if ghIssue.PullRequestLinks != nil {
+		// skip pull requests
 		return nil
 	}
 
-	for _, ghIssue := range issues {
+	fmt.Printf("\n%d: [%6s] %s\n\t%s\n",
+		*ghIssue.Number, *ghIssue.State, *ghIssue.Title, *ghIssue.HTMLURL)
 
-		if ghIssue.PullRequestLinks != nil {
-			// skip pull requests
-			continue
-		}
+	slug := fmt.Sprintf("github:%s:%s:%d", args.githubOrg, *repo.Name, *ghIssue.Number)
 
-		fmt.Printf("\n%d: [%6s] %s\n\t%s\n",
-			*ghIssue.Number, *ghIssue.State, *ghIssue.Title, *ghIssue.HTMLURL)
+	search := fmt.Sprintf("summary ~ \"%s\" and ( type = story or type = bug )", slug)
 
-		slug := fmt.Sprintf("github:%s:%s:%d", args.githubOrg, *repo.Name, *ghIssue.Number)
-
-		search := fmt.Sprintf("summary ~ \"%s\" and ( type = story or type = bug )", slug)
-
-		jiraIssues, _, err := args.jiraClient.Issue.Search(search, nil)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to search for issue: %v", err)
-			continue
-		}
-
-		if len(jiraIssues) == 0 {
-			body := ""
-			if ghIssue.Body != nil {
-				body = *ghIssue.Body
-			}
-			issueParams := &jira.Issue{
-				Fields: &jira.IssueFields{
-					Project: jira.Project{
-						Key: args.jiraProject,
-					},
-					Components: []*jira.Component{
-						&jira.Component{
-							Name: args.jiraComponent,
-						},
-					},
-					Type: jira.IssueType{
-						Name: args.jiraIssueTypeName,
-					},
-					Summary: fmt.Sprintf("%s [%s]", *ghIssue.Title, slug),
-					Description: fmt.Sprintf("created automatically from %s\n\n%s",
-						*ghIssue.HTMLURL, body),
-				},
-			}
-			newJiraIssue, response, err := args.jiraClient.Issue.Create(issueParams)
-			if err != nil {
-				text, _ := ioutil.ReadAll(response.Body)
-				fmt.Fprintf(os.Stderr, "Failed to create issue: %s\n%s\n", err, text)
-				os.Exit(1)
-			}
-			fmt.Printf("CREATED %s %s/browse/%s\n",
-				newJiraIssue.Key,
-				args.jiraURL,
-				newJiraIssue.Key,
-			)
-		} else {
-			for _, jiraIssue := range jiraIssues {
-				fmt.Printf("EXISTING [%s] (%s) %s: %+v\n",
-					jiraIssue.Fields.Type.Name,
-					jiraIssue.Fields.Priority.Name,
-					jiraIssue.Key,
-					jiraIssue.Fields.Summary,
-				)
-			}
-		}
+	jiraIssues, _, err := args.jiraClient.Issue.Search(search, nil)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to search for issue: %v", err)
+		return err
 	}
+
+	if len(jiraIssues) != 0 {
+		for _, jiraIssue := range jiraIssues {
+			fmt.Printf("EXISTING [%s] (%s) %s: %+v\n",
+				jiraIssue.Fields.Type.Name,
+				jiraIssue.Fields.Priority.Name,
+				jiraIssue.Key,
+				jiraIssue.Fields.Summary,
+			)
+		}
+		return nil
+	}
+
+	body := ""
+	if ghIssue.Body != nil {
+		body = *ghIssue.Body
+	}
+	issueParams := &jira.Issue{
+		Fields: &jira.IssueFields{
+			Project: jira.Project{
+				Key: args.jiraProject,
+			},
+			Components: []*jira.Component{
+				&jira.Component{
+					Name: args.jiraComponent,
+				},
+			},
+			Type: jira.IssueType{
+				Name: args.jiraIssueTypeName,
+			},
+			Summary: fmt.Sprintf("%s [%s]", *ghIssue.Title, slug),
+			Description: fmt.Sprintf("created automatically from %s\n\n%s",
+				*ghIssue.HTMLURL, body),
+		},
+	}
+	newJiraIssue, response, err := args.jiraClient.Issue.Create(issueParams)
+	if err != nil {
+		text, _ := ioutil.ReadAll(response.Body)
+		fmt.Fprintf(os.Stderr, "Failed to create issue: %s\n%s\n", err, text)
+		os.Exit(1)
+	}
+	fmt.Printf("CREATED %s %s/browse/%s\n",
+		newJiraIssue.Key,
+		args.jiraURL,
+		newJiraIssue.Key,
+	)
 
 	return nil
 }
