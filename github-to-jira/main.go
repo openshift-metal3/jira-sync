@@ -124,6 +124,20 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 	if ghIssue.Body != nil {
 		body = *ghIssue.Body
 	}
+
+	// The summary can only be 255 characters, so we have to truncate
+	// what we're given if it will be too long with the slug we have
+	// to add.
+	title := *ghIssue.Title
+	if len(title)+len(slug)+6 > 250 {
+		// Remove space fo the slug, the space before it, the brackets
+		// around it, and the elipsis we add on the following line.
+		end := min(250, len(title)) - (len(slug) + 6)
+		title = fmt.Sprintf("%s...", title[0:end])
+	}
+	summary := fmt.Sprintf("%s [%s]", title, slug)
+	fmt.Printf("summary %q (%d)\n", summary, len(summary))
+
 	issueParams := &jira.Issue{
 		Fields: &jira.IssueFields{
 			Project: jira.Project{
@@ -137,7 +151,7 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 			Type: jira.IssueType{
 				Name: args.jiraIssueTypeName,
 			},
-			Summary: fmt.Sprintf("%s [%s]", *ghIssue.Title, slug),
+			Summary: summary,
 			Description: fmt.Sprintf("created automatically from %s\n\n%s",
 				*ghIssue.HTMLURL, body),
 		},
@@ -154,6 +168,13 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 	)
 
 	return nil
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func main() {
