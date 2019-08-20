@@ -6,7 +6,7 @@ Jira instance.
 For example, this command
 
 ```
-github-to-jira \
+~/go/bin/github-to-jira \
     -jira-user you -jira-password secret \
     -github-token too-long-to-type \
     -jira-url https://project-managers.bigco.com \
@@ -19,3 +19,9 @@ looking for open tickets. For each one it finds, it looks for a ticket
 in the jira instance with a slug made up of the github org, repo, and
 issue number. If no such ticket is found, a new ticket is created in
 the "MY_THING" jira project.
+
+## Installing
+
+```
+go get github.com/dhellmann/jira-sync/github-to-jira
+```
