@@ -158,6 +158,7 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 			Type: jira.IssueType{
 				Name: args.jiraIssueTypeName,
 			},
+			Labels:      []string{"github", fmt.Sprintf("%s/%s", args.githubOrg, *repo.Name)},
 			Summary:     summary,
 			Description: description,
 		},
