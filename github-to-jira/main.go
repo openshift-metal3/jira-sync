@@ -137,6 +137,14 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 	summary := fmt.Sprintf("%s [%s]", title, slug)
 	fmt.Printf("summary %q (%d)\n", summary, len(summary))
 
+	// Add a line indicating that this ticket was imported
+	// automatically to the top of the description. Use italics (wrap
+	// in _) and use the slug as the text for the link so that even if
+	// someone modifies the summary text we can find this ticket
+	// again.
+	description := fmt.Sprintf("_created automatically from [%s|%s]_\n\n%s",
+		slug, *ghIssue.HTMLURL, body)
+
 	issueParams := &jira.Issue{
 		Fields: &jira.IssueFields{
 			Project: jira.Project{
@@ -150,9 +158,8 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 			Type: jira.IssueType{
 				Name: args.jiraIssueTypeName,
 			},
-			Summary: summary,
-			Description: fmt.Sprintf("created automatically from %s\n\n%s",
-				*ghIssue.HTMLURL, body),
+			Summary:     summary,
+			Description: description,
 		},
 	}
 	newJiraIssue, response, err := args.jiraClient.Issue.Create(issueParams)
