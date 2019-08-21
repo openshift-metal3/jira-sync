@@ -161,7 +161,7 @@ func fetchDescriptionForBug(args syncArgs, bug bug) (string, error) {
 }
 
 func processOneIssue(args syncArgs, bug bug) error {
-	fmt.Printf("%7d %s\n", bug.ID, bug.Summary)
+	fmt.Printf("\n%7d %s\n", bug.ID, bug.Summary)
 
 	// Build a unique slug to use as a search term to find jira
 	// tickets based on the bugzilla ticket.
