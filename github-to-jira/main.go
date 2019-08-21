@@ -98,10 +98,11 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 	fmt.Printf("\n%d: [%6s] %s\n\t%s\n",
 		*ghIssue.Number, *ghIssue.State, *ghIssue.Title, *ghIssue.HTMLURL)
 
+	// Build a unique slug to use as a search term to find jira
+	// tickets based on the github ticket.
 	slug := fmt.Sprintf("github:%s:%s:%d", args.githubOrg, *repo.Name, *ghIssue.Number)
 
-	search := fmt.Sprintf("summary ~ \"%s\" and ( type = story or type = bug )", slug)
-
+	search := fmt.Sprintf("text ~ \"%s\" and ( type = story or type = bug )", slug)
 	jiraIssues, _, err := args.jiraClient.Issue.Search(search, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to search for issue: %v", err)
