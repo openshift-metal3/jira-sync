@@ -159,13 +159,15 @@ func fetchDescriptionForBug(args syncArgs, bug bug) (string, error) {
 }
 
 func processOneIssue(args syncArgs, bug bug) error {
+
+	bugDisplayURL := fmt.Sprintf("%s/show_bug.cgi?id=%d", args.bugzillaURL, bug.ID)
+	fmt.Printf("%s", bugDisplayURL)
+
 	// Build a unique slug to use as a search term to find jira
 	// tickets based on the bugzilla ticket.
 	slug := fmt.Sprintf("bugzilla:%d", bug.ID)
 
-	fmt.Printf("%s", slug)
-
-	search := fmt.Sprintf("text ~ \"%s\" and type = bug", slug)
+	search := fmt.Sprintf("text ~ \"%s\" and ( type = story or type = bug )", slug)
 	jiraIssues, _, err := args.jiraClient.Issue.Search(search, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to search for issue: %v", err)
@@ -194,8 +196,6 @@ func processOneIssue(args syncArgs, bug bug) error {
 		title = fmt.Sprintf("%s...", title[0:end])
 	}
 	summary := fmt.Sprintf("%s [%s]", title, slug)
-
-	bugDisplayURL := fmt.Sprintf("%s/show_bug.cgi?id=%d", args.bugzillaURL, bug.ID)
 
 	// Add a line indicating that this ticket was imported
 	// automatically to the top of the description. Use italics (wrap
