@@ -168,6 +168,7 @@ func processOneIssue(args syncArgs, bug bug) error {
 	slug := fmt.Sprintf("bugzilla:%d", bug.ID)
 
 	search := fmt.Sprintf("text ~ \"%s\" and ( type = story or type = bug )", slug)
+	search := fmt.Sprintf("text ~ \"%s\" and type = bug", slug)
 	jiraIssues, _, err := args.jiraClient.Issue.Search(search, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to search for issue: %v", err)
@@ -306,7 +307,7 @@ func main() {
 		os.Exit(1)
 	}
 	knideployProject := jiraCreateMeta.GetProjectWithKey(*jiraProject)
-	storyIssueType := knideployProject.GetIssueTypeWithName("story")
+	bugIssueType := knideployProject.GetIssueTypeWithName("bug")
 
 	args := syncArgs{
 		bugzillaURL:       *bugzillaURL,
@@ -316,7 +317,7 @@ func main() {
 		jiraClient:        jiraClient,
 		jiraProject:       *jiraProject,
 		jiraComponent:     *jiraComponent,
-		jiraIssueTypeName: storyIssueType.Name,
+		jiraIssueTypeName: bugIssueType.Name,
 	}
 
 	err = processAllIssues(args)
