@@ -51,6 +51,22 @@ func processAllRepositories(args syncArgs, callback callback) error {
 	return nil
 }
 
+func processSomeRepositories(args syncArgs, callback callback, repoNames []string) error {
+	ctx := context.Background()
+
+	for _, repoName := range repoNames {
+		repo, _, err := args.githubClient.Repositories.Get(ctx, args.githubOrg, repoName)
+		if err != nil {
+			return fmt.Errorf("Could not get repository %s/%s: %s", args.githubOrg, repoName, err)
+		}
+		if err = callback(args, repo); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func processOneRepository(args syncArgs, repo *github.Repository) error {
 
 	opts := github.IssueListByRepoOptions{
@@ -258,7 +274,11 @@ func main() {
 		jiraIssueTypeName: storyIssueType.Name,
 	}
 
-	err = processAllRepositories(args, processOneRepository)
+	if len(flag.Args()) > 0 {
+		err = processSomeRepositories(args, processOneRepository, flag.Args())
+	} else {
+		err = processAllRepositories(args, processOneRepository)
+	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v", err)
 		os.Exit(1)
