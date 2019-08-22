@@ -95,7 +95,7 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 		return nil
 	}
 
-	fmt.Printf("%s", *ghIssue.HTMLURL)
+	fmt.Printf("%s \"%s\"", *ghIssue.HTMLURL, *ghIssue.Title)
 
 	// Build a unique slug to use as a search term to find jira
 	// tickets based on the github ticket.
