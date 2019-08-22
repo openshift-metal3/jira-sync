@@ -62,35 +62,40 @@ func reportClosedIssues(args syncArgs) error {
 		}
 
 		switch match[1] {
+
 		case "github":
 			fields := strings.Split(match[2], ":")
 			fmt.Printf("\torg = %q repo = %q issue = %q\n",
 				fields[0], fields[1], fields[2])
+
 		case "bugzilla":
 			fmt.Printf("\tbz = %s", match[2])
 			bzURL := fmt.Sprintf("%s/rest/bug/%s?include_fields=id,summary,status",
 				args.bugzillaURL, match[2])
 			req, err := http.NewRequest(http.MethodGet, bzURL, nil)
 			if err != nil {
-				return err
+				fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+				continue
 			}
 			req.Header.Set("User-Agent", "jira-sync")
 
 			res, err := bzClient.Do(req)
 			if err != nil {
-				return err
+				fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+				continue
 			}
 
 			bzBody, err := ioutil.ReadAll(res.Body)
 			if err != nil {
-				return err
+				fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+				continue
 			}
 
 			bz := bugSet{}
 			err = json.Unmarshal(bzBody, &bz)
 			if err != nil {
-				return fmt.Errorf("Unable to parse bugzilla response for description: %s: %s",
-					bzBody, err)
+				fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+				continue
 			}
 
 			status := bz.Bugs[0].Status
@@ -102,7 +107,7 @@ func reportClosedIssues(args syncArgs) error {
 			fmt.Printf("\n")
 
 		default:
-			return fmt.Errorf("Could not parse %q", match[0])
+			fmt.Fprintf(os.Stderr, "ERROR:Could not parse %q\n", match[0])
 		}
 	}
 
