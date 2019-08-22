@@ -116,7 +116,6 @@ func reportClosedIssues(args syncArgs) error {
 
 func main() {
 	bugzillaURL := flag.String("bugzilla-url", "", "the base URL for the bugzilla server")
-	// token := flag.String("bugzilla-token", "", "the API token")
 	username := flag.String("jira-user", "", "the username")
 	password := flag.String("jira-password", "", "the password")
 	jiraURL := flag.String("jira-url", "", "the jira server URL")
@@ -128,11 +127,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Please provide an API token (-bugzilla-url)")
 		os.Exit(1)
 	}
-
-	// if *token == "" {
-	// 	fmt.Fprintf(os.Stderr, "Please provide an API token (-bugzilla-token)")
-	// 	os.Exit(1)
-	// }
 
 	if *username == "" || *password == "" {
 		fmt.Fprintf(os.Stderr, "Please specify both username (-jira-user) and password (-jira-password)")
