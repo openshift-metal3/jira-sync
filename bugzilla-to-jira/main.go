@@ -54,8 +54,6 @@ func processAllIssues(args syncArgs) error {
 	parsedURL.RawQuery = q.Encode()
 	parsedURL.Path = fmt.Sprintf("%s/rest/bug", parsedURL.Path)
 
-	fmt.Printf("query %s\n", parsedURL.String())
-
 	client := http.Client{
 		Timeout: time.Second * 20,
 	}
@@ -161,13 +159,12 @@ func fetchDescriptionForBug(args syncArgs, bug bug) (string, error) {
 }
 
 func processOneIssue(args syncArgs, bug bug) error {
-	fmt.Printf("\n%7d %s\n", bug.ID, bug.Summary)
-
 	// Build a unique slug to use as a search term to find jira
 	// tickets based on the bugzilla ticket.
 	slug := fmt.Sprintf("bugzilla:%d", bug.ID)
 
-	search := fmt.Sprintf("text ~ \"%s\" and ( type = story or type = bug )", slug)
+	fmt.Printf("%s", slug)
+
 	search := fmt.Sprintf("text ~ \"%s\" and type = bug", slug)
 	jiraIssues, _, err := args.jiraClient.Issue.Search(search, nil)
 	if err != nil {
@@ -177,7 +174,7 @@ func processOneIssue(args syncArgs, bug bug) error {
 
 	if len(jiraIssues) != 0 {
 		for _, jiraIssue := range jiraIssues {
-			fmt.Printf("EXISTING %s %s/browse/%s\n",
+			fmt.Printf(" EXISTING %s %s/browse/%s\n",
 				jiraIssue.Fields.Type.Name,
 				args.jiraURL,
 				jiraIssue.Key,
@@ -197,7 +194,6 @@ func processOneIssue(args syncArgs, bug bug) error {
 		title = fmt.Sprintf("%s...", title[0:end])
 	}
 	summary := fmt.Sprintf("%s [%s]", title, slug)
-	fmt.Printf("summary %q (%d)\n", summary, len(summary))
 
 	bugDisplayURL := fmt.Sprintf("%s/show_bug.cgi?id=%d", args.bugzillaURL, bug.ID)
 
@@ -233,10 +229,11 @@ func processOneIssue(args syncArgs, bug bug) error {
 		text, _ := ioutil.ReadAll(response.Body)
 		return fmt.Errorf("Failed to create issue: %s\n%s\n", err, text)
 	}
-	fmt.Printf("CREATED %s %s/browse/%s\n",
+	fmt.Printf(" CREATED %s %s/browse/%s %s\n",
 		newJiraIssue.Key,
 		args.jiraURL,
 		newJiraIssue.Key,
+		summary,
 	)
 
 	return nil
