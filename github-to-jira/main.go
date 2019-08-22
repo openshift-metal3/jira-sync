@@ -110,7 +110,7 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 
 	if len(jiraIssues) != 0 {
 		for _, jiraIssue := range jiraIssues {
-			fmt.Printf("EXISTING %s %s/browse/%s\n",
+			fmt.Printf(" EXISTING %s %s/browse/%s\n",
 				jiraIssue.Fields.Type.Name,
 				args.jiraURL,
 				jiraIssue.Key,
