@@ -20,8 +20,33 @@ in the jira instance with a slug made up of the github org, repo, and
 issue number. If no such ticket is found, a new ticket is created in
 the "MY_THING" jira project.
 
+The following command scans only the "upstream/reponame" repository:
+
+```
+~/go/bin/github-to-jira \
+    -jira-user you -jira-password secret \
+    -github-token too-long-to-type \
+    -jira-url https://project-managers.bigco.com \
+    -jira-project MY_THING \
+    -github-org upstream \
+    reponame
+```
+
+Bugzilla tickets can be imported as bugs using
+
+```
+~/go/bin/bugzilla-to-jira \
+    -jira-user you -jira-password secret \
+    -bugzilla-token garbled-hash \
+    -jira-url https://project-managers.bigco.com \
+    -jira-project MY_THING \
+    -bugzilla-url https://bugs.bigco.com \
+    -bugzilla-product 'My Thing'
+```
+
 ## Installing
 
 ```
 go get github.com/dhellmann/jira-sync/github-to-jira
+go get github.com/dhellmann/jira-sync/bugzilla-to-jira
 ```
