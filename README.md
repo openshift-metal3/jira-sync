@@ -25,9 +25,9 @@ The following command scans only the "upstream/reponame" repository:
 ```
 ~/go/bin/github-to-jira \
     -jira-user you -jira-password secret \
-    -github-token too-long-to-type \
     -jira-url https://project-managers.bigco.com \
     -jira-project MY_THING \
+    -github-token too-long-to-type \
     -github-org upstream \
     reponame
 ```
@@ -37,11 +37,24 @@ Bugzilla tickets can be imported as bugs using
 ```
 ~/go/bin/bugzilla-to-jira \
     -jira-user you -jira-password secret \
-    -bugzilla-token garbled-hash \
     -jira-url https://project-managers.bigco.com \
     -jira-project MY_THING \
+    -bugzilla-token garbled-hash \
     -bugzilla-url https://bugs.bigco.com \
     -bugzilla-product 'My Thing'
+```
+
+To find jira tickets associated with closed github or bugzilla tickets
+and mark them as closeable, use "find-closed":
+
+```
+~/go/bin/find-closed \
+    -jira-user you -jira-password secret \
+    -jira-url https://project-managers.bigco.com \
+    -jira-project MY_THING \
+    -bugzilla-token garbled-hash \
+    -bugzilla-url https://bugs.bigco.com \
+    -github-token too-long-to-type
 ```
 
 ## Installing
@@ -49,4 +62,5 @@ Bugzilla tickets can be imported as bugs using
 ```
 go get github.com/dhellmann/jira-sync/github-to-jira
 go get github.com/dhellmann/jira-sync/bugzilla-to-jira
+go get github.com/dhellmann/jira-sync/find-closed
 ```
