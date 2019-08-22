@@ -95,8 +95,7 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 		return nil
 	}
 
-	fmt.Printf("\n%d: [%6s] %s\n\t%s\n",
-		*ghIssue.Number, *ghIssue.State, *ghIssue.Title, *ghIssue.HTMLURL)
+	fmt.Printf("%s", *ghIssue.HTMLURL)
 
 	// Build a unique slug to use as a search term to find jira
 	// tickets based on the github ticket.
@@ -136,7 +135,6 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 		title = fmt.Sprintf("%s...", title[0:end])
 	}
 	summary := fmt.Sprintf("%s [%s]", title, slug)
-	fmt.Printf("summary %q (%d)\n", summary, len(summary))
 
 	// Add a line indicating that this ticket was imported
 	// automatically to the top of the description. Use italics (wrap
@@ -169,10 +167,11 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 		text, _ := ioutil.ReadAll(response.Body)
 		return fmt.Errorf("Failed to create issue: %s\n%s\n", err, text)
 	}
-	fmt.Printf("CREATED %s %s/browse/%s\n",
+	fmt.Printf("CREATED %s %s/browse/%s %s\n",
 		newJiraIssue.Key,
 		args.jiraURL,
 		newJiraIssue.Key,
+		summary,
 	)
 
 	return nil
