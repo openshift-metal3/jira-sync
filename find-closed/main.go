@@ -63,9 +63,10 @@ func reportClosedIssues(args syncArgs) error {
 
 		isClosed := false
 
-		fmt.Printf("%s", jiraIssue.Key)
+		fmt.Printf("%s/browse/%s", args.jiraURL, jiraIssue.Key)
 		match := linkSearch.FindStringSubmatch(jiraIssue.Fields.Description)
 		if len(match) == 0 {
+			fmt.Printf("\tunlinked?\n")
 			continue
 		}
 
@@ -73,7 +74,7 @@ func reportClosedIssues(args syncArgs) error {
 
 		case "github":
 			fields := strings.Split(match[2], ":")
-			fmt.Printf("\torg = %q repo = %q issue = %q",
+			fmt.Printf("\tgithub org = %q repo = %q issue = %q",
 				fields[0], fields[1], fields[2])
 
 			issueNum, err := strconv.Atoi(fields[2])
