@@ -16,6 +16,7 @@ type syncArgs struct {
 	githubOrg         string
 	githubLabel       string
 	jiraURL           string
+	jiraUser          string
 	jiraClient        *jira.Client
 	jiraProject       string
 	jiraComponent     string
@@ -190,6 +191,33 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 		summary,
 	)
 
+	// Remove the watch from this issue for the user that created it,
+	// assuming the user is either a bot or someone who does not
+	// actually want to see all notifications for all of the items
+	// they import.
+	//
+	// FIXME: Make this a command line option.
+	//
+	// FIXME: The client library doesn't construct the remove request
+	// properly, so do it ourselves until we can fix that.
+	// _, err = args.jiraClient.Issue.RemoveWatcher(newJiraIssue.ID, args.jiraUser)
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Could not remove watch on %s for %s: %s",
+	// 		newJiraIssue.ID, args.jiraUser, err)
+	// }
+	apiEndPoint := fmt.Sprintf("rest/api/2/issue/%s/watchers?username=%s",
+		newJiraIssue.ID, args.jiraUser)
+	req, err := args.jiraClient.NewRequest("DELETE", apiEndPoint, nil)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: Could not remove watch: %s\n", err)
+		return nil
+	}
+	_, err = args.jiraClient.Do(req, nil)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not remove watch: %s\n", err)
+		return nil
+	}
+
 	return nil
 }
 
@@ -268,6 +296,7 @@ func main() {
 		githubOrg:         *githubOrg,
 		githubLabel:       *githubLabel,
 		jiraURL:           *jiraURL,
+		jiraUser:          *username,
 		jiraClient:        jiraClient,
 		jiraProject:       *jiraProject,
 		jiraComponent:     *jiraComponent,
