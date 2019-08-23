@@ -48,126 +48,139 @@ func reportClosedIssues(args syncArgs) error {
 
 	search := fmt.Sprintf("status != CLOSED and status != DONE and ( labels = github or labels = bugzilla ) and project = %s", args.jiraProject)
 
-	jiraIssues, _, err := args.jiraClient.Issue.Search(search, nil)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to search for issue: %v", err)
-		return err
-	}
-
 	bzClient := http.Client{
 		Timeout: time.Second * 2, // Maximum of 2 secs
 	}
 	ctx := context.Background()
 
-	for _, jiraIssue := range jiraIssues {
+	opts := jira.SearchOptions{
+		StartAt:    0,
+		MaxResults: 50,
+	}
 
-		isClosed := false
-
-		fmt.Printf("%s/browse/%s", args.jiraURL, jiraIssue.Key)
-		match := linkSearch.FindStringSubmatch(jiraIssue.Fields.Description)
-		if len(match) == 0 {
-			fmt.Printf("\tunlinked?\n")
-			continue
-		}
-
-		switch match[1] {
-
-		case "github":
-			fields := strings.Split(match[2], ":")
-			fmt.Printf("\tgithub org = %q repo = %q issue = %q",
-				fields[0], fields[1], fields[2])
-
-			issueNum, err := strconv.Atoi(fields[2])
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
-				continue
-			}
-			ghIssue, _, err := args.githubClient.Issues.Get(ctx, fields[0], fields[1], issueNum)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
-				continue
-			}
-
-			isClosed = (*ghIssue.State == "closed")
-
-		case "bugzilla":
-			fmt.Printf("\tbz = %s", match[2])
-			bzURL := fmt.Sprintf("%s/rest/bug/%s?include_fields=id,summary,status",
-				args.bugzillaURL, match[2])
-			req, err := http.NewRequest(http.MethodGet, bzURL, nil)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
-				continue
-			}
-			req.Header.Set("User-Agent", "jira-sync")
-
-			res, err := bzClient.Do(req)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
-				continue
-			}
-
-			bzBody, err := ioutil.ReadAll(res.Body)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
-				continue
-			}
-
-			bz := bugSet{}
-			err = json.Unmarshal(bzBody, &bz)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
-				continue
-			}
-
-			isClosed = bz.Bugs[0].Status == "CLOSED"
-
-		default:
-			fmt.Fprintf(os.Stderr, "ERROR:Could not parse %q\n", match[0])
-		}
-
-		if !isClosed {
-			fmt.Printf("\n")
-			continue
-		}
-
-		fmt.Printf(" CLOSED")
-
-		needToAdd := true
-
-		// The search results do not include comments, so we have to
-		// fetch tickets when we need the comments.
-		commentedIssue, _, err := args.jiraClient.Issue.Get(jiraIssue.Key, nil)
+	for {
+		jiraIssues, _, err := args.jiraClient.Issue.Search(search, &opts)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "ERROR fetching issue %s: %s\n", jiraIssue.Key, err)
-			continue
+			fmt.Fprintf(os.Stderr, "Failed to search for issue: %v", err)
+			return err
 		}
 
-		if commentedIssue.Fields.Comments != nil {
-			for _, comment := range commentedIssue.Fields.Comments.Comments {
-				if comment.Body == closedCommentMessage {
-					needToAdd = false
-					break
-				}
-			}
-		} else {
-			fmt.Printf(" nil comments")
+		if len(jiraIssues) == 0 {
+			break
 		}
 
-		if needToAdd {
-			newComment := jira.Comment{
-				Body: closedCommentMessage,
-			}
-			_, _, err := args.jiraClient.Issue.AddComment(jiraIssue.ID, &newComment)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "ERROR adding comment: %s\n", err)
+		for _, jiraIssue := range jiraIssues {
+
+			isClosed := false
+
+			fmt.Printf("%s/browse/%s", args.jiraURL, jiraIssue.Key)
+			match := linkSearch.FindStringSubmatch(jiraIssue.Fields.Description)
+			if len(match) == 0 {
+				fmt.Printf("\tunlinked?\n")
 				continue
 			}
-			fmt.Printf(" UPDATED")
+
+			switch match[1] {
+
+			case "github":
+				fields := strings.Split(match[2], ":")
+				fmt.Printf("\tgithub org = %q repo = %q issue = %q",
+					fields[0], fields[1], fields[2])
+
+				issueNum, err := strconv.Atoi(fields[2])
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+					continue
+				}
+				ghIssue, _, err := args.githubClient.Issues.Get(ctx, fields[0], fields[1], issueNum)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+					continue
+				}
+
+				isClosed = (*ghIssue.State == "closed")
+
+			case "bugzilla":
+				fmt.Printf("\tbz = %s", match[2])
+				bzURL := fmt.Sprintf("%s/rest/bug/%s?include_fields=id,summary,status",
+					args.bugzillaURL, match[2])
+				req, err := http.NewRequest(http.MethodGet, bzURL, nil)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+					continue
+				}
+				req.Header.Set("User-Agent", "jira-sync")
+
+				res, err := bzClient.Do(req)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+					continue
+				}
+
+				bzBody, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+					continue
+				}
+
+				bz := bugSet{}
+				err = json.Unmarshal(bzBody, &bz)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+					continue
+				}
+
+				isClosed = bz.Bugs[0].Status == "CLOSED"
+
+			default:
+				fmt.Fprintf(os.Stderr, "ERROR:Could not parse %q\n", match[0])
+			}
+
+			if !isClosed {
+				fmt.Printf("\n")
+				continue
+			}
+
+			fmt.Printf(" CLOSED")
+
+			needToAdd := true
+
+			// The search results do not include comments, so we have to
+			// fetch tickets when we need the comments.
+			commentedIssue, _, err := args.jiraClient.Issue.Get(jiraIssue.Key, nil)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "ERROR fetching issue %s: %s\n", jiraIssue.Key, err)
+				continue
+			}
+
+			if commentedIssue.Fields.Comments != nil {
+				for _, comment := range commentedIssue.Fields.Comments.Comments {
+					if comment.Body == closedCommentMessage {
+						needToAdd = false
+						break
+					}
+				}
+			} else {
+				fmt.Printf(" nil comments")
+			}
+
+			if needToAdd {
+				newComment := jira.Comment{
+					Body: closedCommentMessage,
+				}
+				_, _, err := args.jiraClient.Issue.AddComment(jiraIssue.ID, &newComment)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "ERROR adding comment: %s\n", err)
+					continue
+				}
+				fmt.Printf(" UPDATED")
+			}
+
+			fmt.Printf("\n")
+
 		}
 
-		fmt.Printf("\n")
-
+		opts.StartAt += len(jiraIssues)
 	}
 
 	return nil
