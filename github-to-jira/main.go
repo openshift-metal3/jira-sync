@@ -275,9 +275,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Could not create client: %v", err)
 		os.Exit(1)
 	}
-	jiraCreateMeta, _, err := jiraClient.Issue.GetCreateMeta(*jiraProject)
+	jiraCreateMeta, response, err := jiraClient.Issue.GetCreateMeta(*jiraProject)
+	defer response.Body.Close()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to fetch metadata for %s: %s", *jiraProject, err)
+		text, _ := ioutil.ReadAll(response.Body)
+		fmt.Fprintf(os.Stderr, "Failed to fetch metadata for %s: %s\n%s", *jiraProject, err, text)
 		os.Exit(1)
 	}
 	knideployProject := jiraCreateMeta.GetProjectWithKey(*jiraProject)
