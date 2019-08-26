@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/andygrunwald/go-jira"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"time"
+
+	"github.com/andygrunwald/go-jira"
 )
 
 type syncArgs struct {

@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/andygrunwald/go-jira"
-	"github.com/google/go-github/github"
-	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -15,6 +12,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/andygrunwald/go-jira"
+	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
 )
 
 const closedCommentMessage = "The upstream ticket has been closed."

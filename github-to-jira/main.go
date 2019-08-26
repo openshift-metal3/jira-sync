@@ -4,11 +4,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"os"
+
 	"github.com/andygrunwald/go-jira"
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
-	"io/ioutil"
-	"os"
 )
 
 type syncArgs struct {
