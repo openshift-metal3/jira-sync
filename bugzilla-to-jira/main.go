@@ -28,7 +28,7 @@ type syncArgs struct {
 type bug struct {
 	ID          int    `json:"id"`
 	Summary     string `json:"summary"`
-	Description string // not in the json from the original query
+	Description string `json:"description"`
 }
 
 type bugSet struct {
@@ -52,7 +52,7 @@ func processAllIssues(args syncArgs) error {
 	q.Add("status", "ON_QA")
 	q.Add("status", "VERIFIED")
 	q.Add("status", "RELEASE_PENDING")
-	q.Set("include_fields", "id,summary")
+	q.Set("include_fields", "id,summary,description")
 	parsedURL.RawQuery = q.Encode()
 	parsedURL.Path = fmt.Sprintf("%s/rest/bug", parsedURL.Path)
 
@@ -83,81 +83,12 @@ func processAllIssues(args syncArgs) error {
 	}
 
 	for _, bug := range theBugs.Bugs {
-		bug.Description, err = fetchDescriptionForBug(args, bug)
-		if err != nil {
-			return fmt.Errorf("Failed to fetch description of bug %d: %s", bug.ID, err)
-		}
 		if err := processOneIssue(args, bug); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-func fetchDescriptionForBug(args syncArgs, bug bug) (string, error) {
-	commentURL := fmt.Sprintf("%s/rest/bug/%d/comment", args.bugzillaURL, bug.ID)
-
-	client := http.Client{
-		Timeout: time.Second * 5,
-	}
-
-	req, err := http.NewRequest(http.MethodGet, commentURL, nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("User-Agent", "jira-sync")
-
-	res, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-
-	commentsBody, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return "", err
-	}
-
-	// A response looks like:
-	// {
-	// 	"bugs": {
-	// 		"35": {
-	// 			"comments": [
-	// 				{
-	// 					"time": "2000-07-25T13:50:04Z",
-	// 					"text": "test bug to fix problem in removing from cc list.",
-	// 					"bug_id": 35,
-	// 					"count": 0,
-	// 					"attachment_id": null,
-	// 					"is_private": false,
-	// 					"tags": [],
-	// 					"creator": "user@bugzilla.org",
-	// 					"creation_time": "2000-07-25T13:50:04Z",
-	// 					"id": 75
-	// 				}
-	// 			]
-	// 		}
-	// 	},
-	// 	"comments": {}
-	// }
-	//
-	// This poses a challenge, since the keys for the second level
-	// are bug IDs, and not static.
-
-	var c interface{}
-	err = json.Unmarshal(commentsBody, &c)
-
-	key := fmt.Sprintf("%d", bug.ID)
-
-	bugMap := c.(map[string]interface{})
-	commentsByBugID := bugMap["bugs"].(map[string]interface{})
-	commentsForBug := commentsByBugID[key]
-	commentWrapper := commentsForBug.(map[string]interface{})
-	commentList := commentWrapper["comments"].([]interface{})
-	descriptionComment := commentList[0].(map[string]interface{})
-	descriptionText := descriptionComment["text"].(string)
-
-	return descriptionText, nil
 }
 
 func processOneIssue(args syncArgs, bug bug) error {
