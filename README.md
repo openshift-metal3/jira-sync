@@ -60,7 +60,7 @@ and mark them as closeable, use "find-closed":
 ## Installing
 
 ```
-go get github.com/dhellmann/jira-sync/github-to-jira
-go get github.com/dhellmann/jira-sync/bugzilla-to-jira
-go get github.com/dhellmann/jira-sync/find-closed
+go get github.com/openshift-metal3/jira-sync/github-to-jira
+go get github.com/openshift-metal3/jira-sync/bugzilla-to-jira
+go get github.com/openshift-metal3/jira-sync/find-closed
 ```
