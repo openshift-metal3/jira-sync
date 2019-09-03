@@ -153,7 +153,8 @@ $bugzilla_to_jira \
     -jira-project KNIDEPLOY \
     -jira-component 'KNI Deploy Install' \
     \
-    -bugzilla-product 'Kubernetes-native Infrastructure'
+    -bugzilla-product 'Kubernetes-native Infrastructure' \
+    -bugzilla-component 'Deployment'
 
 header "Reporting on items closed upstream but not in jira"
 $find_closed \

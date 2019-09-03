@@ -16,6 +16,7 @@ import (
 type syncArgs struct {
 	bugzillaURL       string
 	bugzillaProduct   string
+	bugzillaComponent string
 	bugzillaToken     string
 	jiraURL           string
 	jiraUser          string
@@ -53,6 +54,9 @@ func processAllIssues(args syncArgs) error {
 	q.Add("status", "VERIFIED")
 	q.Add("status", "RELEASE_PENDING")
 	q.Set("include_fields", "id,summary,description")
+	if args.bugzillaComponent != "" {
+		q.Set("component", args.bugzillaComponent)
+	}
 	parsedURL.RawQuery = q.Encode()
 	parsedURL.Path = fmt.Sprintf("%s/rest/bug", parsedURL.Path)
 
@@ -209,6 +213,7 @@ func min(a, b int) int {
 func main() {
 	bugzillaURL := flag.String("bugzilla-url", "", "the base URL for the bugzilla server")
 	bugzillaProduct := flag.String("bugzilla-product", "", "the product name for the bugzilla query")
+	bugzillaComponent := flag.String("bugzilla-component", "", "the component name for the bugzilla query")
 	token := flag.String("bugzilla-token", "", "the API token")
 	username := flag.String("jira-user", "", "the username")
 	password := flag.String("jira-password", "", "the password")
@@ -269,6 +274,7 @@ func main() {
 	args := syncArgs{
 		bugzillaURL:       *bugzillaURL,
 		bugzillaProduct:   *bugzillaProduct,
+		bugzillaComponent: *bugzillaComponent,
 		bugzillaToken:     *token,
 		jiraURL:           *jiraURL,
 		jiraUser:          *username,
