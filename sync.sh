@@ -118,7 +118,8 @@ $github_to_jira \
     -jira-project KNIDEPLOY \
     -jira-component 'KNI Deploy Install' \
     \
-    -github-org metal3-io
+    -github-org metal3-io \
+    -github-ignore metal3-io.github.io
 
 header "Importing openshift-metal3 items for the UX team"
 $github_to_jira \
