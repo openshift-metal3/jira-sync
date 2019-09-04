@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/andygrunwald/go-jira"
 	"github.com/google/go-github/github"
@@ -16,6 +17,7 @@ type syncArgs struct {
 	githubClient      *github.Client
 	githubOrg         string
 	githubLabel       string
+	githubIgnore      []string
 	jiraURL           string
 	jiraUser          string
 	jiraClient        *jira.Client
@@ -70,6 +72,13 @@ func processSomeRepositories(args syncArgs, callback callback, repoNames []strin
 }
 
 func processOneRepository(args syncArgs, repo *github.Repository) error {
+
+	for _, toIgnore := range args.githubIgnore {
+		if toIgnore == *repo.Name {
+			fmt.Printf("\nIGNORING %s\n", *repo.Name)
+			return nil
+		}
+	}
 
 	opts := github.IssueListByRepoOptions{
 		State: "open",
@@ -233,6 +242,7 @@ func main() {
 	token := flag.String("github-token", "", "the API token")
 	githubOrg := flag.String("github-org", "", "the organization to scan")
 	githubLabel := flag.String("github-label", "", "the issue label for filtering")
+	githubIgnore := flag.String("github-ignore", "", "comma separated names of repos to ignore")
 	username := flag.String("jira-user", "", "the username")
 	password := flag.String("jira-password", "", "the password")
 	jiraURL := flag.String("jira-url", "", "the jira server URL")
@@ -298,6 +308,7 @@ func main() {
 		githubClient:      githubClient,
 		githubOrg:         *githubOrg,
 		githubLabel:       *githubLabel,
+		githubIgnore:      strings.Split(*githubIgnore, ","),
 		jiraURL:           *jiraURL,
 		jiraUser:          *username,
 		jiraClient:        jiraClient,
