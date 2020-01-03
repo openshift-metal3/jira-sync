@@ -194,7 +194,7 @@ func processOneIssue(args syncArgs, repo *github.Repository, ghIssue *github.Iss
 		text, _ := ioutil.ReadAll(response.Body)
 		return fmt.Errorf("Failed to create issue: %s\n%s\n", err, text)
 	}
-	fmt.Printf("CREATED %s %s/browse/%s %s\n",
+	fmt.Printf(" CREATED %s %s/browse/%s %s\n",
 		newJiraIssue.Key,
 		args.jiraURL,
 		newJiraIssue.Key,
