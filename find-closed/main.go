@@ -47,7 +47,7 @@ func reportClosedIssues(args syncArgs) error {
 	// extracted separately so we can switch handling based on it.
 	linkSearch := regexp.MustCompile("\\[(github|bugzilla):(.+?)\\|.+\\]")
 
-	search := fmt.Sprintf("status != CLOSED and status != DONE and ( labels = github or labels = bugzilla ) and project = %s", args.jiraProject)
+	search := fmt.Sprintf("status != CLOSED and status != DONE and status != OBSOLETE and ( labels = github or labels = bugzilla ) and project = %s", args.jiraProject)
 
 	bzClient := http.Client{
 		Timeout: time.Second * 2, // Maximum of 2 secs

@@ -162,6 +162,6 @@ $find_closed \
     -jira-user "$jira_user" \
     -jira-password "$jira_password" \
     -jira-url "$jira_url" \
-    -bugzilla-url '$bugzilla_url' \
+    -bugzilla-url "$bugzilla_url" \
     -github-token "$github_token" \
     -jira-project KNIDEPLOY
