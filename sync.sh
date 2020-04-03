@@ -1,18 +1,8 @@
 #!/bin/bash
 
-set -exu
+set -eu
 
 BINDIR=$(dirname $0)
-
-# Log output automatically
-# LOGDIR="$HOME/jira-sync-logs"
-# if [ ! -d "$LOGDIR" ]; then
-#     mkdir -p "$LOGDIR"
-# fi
-# LOGFILE="$LOGDIR/$(date +%F-%H%M%S).log"
-# echo "Logging to $LOGFILE"
-# # Set fd 1 and 2 to write to the log file
-# exec 1> >( tee "${LOGFILE}" ) 2>&1
 
 echo "Starting $(date +%F-%H%M%S)"
 
