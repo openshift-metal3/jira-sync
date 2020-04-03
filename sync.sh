@@ -3,14 +3,14 @@
 set -e
 
 # Log output automatically
-LOGDIR="$HOME/jira-sync-logs"
-if [ ! -d "$LOGDIR" ]; then
-    mkdir -p "$LOGDIR"
-fi
-LOGFILE="$LOGDIR/$(date +%F-%H%M%S).log"
-echo "Logging to $LOGFILE"
-# Set fd 1 and 2 to write to the log file
-exec 1> >( tee "${LOGFILE}" ) 2>&1
+# LOGDIR="$HOME/jira-sync-logs"
+# if [ ! -d "$LOGDIR" ]; then
+#     mkdir -p "$LOGDIR"
+# fi
+# LOGFILE="$LOGDIR/$(date +%F-%H%M%S).log"
+# echo "Logging to $LOGFILE"
+# # Set fd 1 and 2 to write to the log file
+# exec 1> >( tee "${LOGFILE}" ) 2>&1
 
 echo "Starting $(date +%F-%H%M%S)"
 
@@ -30,12 +30,12 @@ function header {
     echo
 }
 
-header "Removing old logs"
-find $LOGDIR -ctime 7 -print -exec rm '{}' \;
+# header "Removing old logs"
+# find $LOGDIR -ctime 7 -print -exec rm '{}' \;
 
-github_to_jira=$HOME/go/bin/github-to-jira
-bugzilla_to_jira=$HOME/go/bin/bugzilla-to-jira
-find_closed=$HOME/go/bin/find-closed
+github_to_jira=./bin/github-to-jira
+bugzilla_to_jira=./bin/bugzilla-to-jira
+find_closed=./bin/find-closed
 
 source $HOME/.jira_sync_settings
 
