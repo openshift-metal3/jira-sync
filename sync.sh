@@ -119,8 +119,7 @@ $github_to_jira \
     -jira-component 'KNI Deploy Install' \
     \
     -github-org metal3-io \
-    -github-ignore metal3-io.github.io \
-    -github-ignore cluster-api-provider-metal3
+    -github-ignore metal3-io.github.io,cluster-api-provider-metal3
 
 header "Importing openshift-metal3 items for the UX team"
 $github_to_jira \
