@@ -2,6 +2,8 @@
 
 set -e
 
+BINDIR=$(dirname $0)
+
 # Log output automatically
 # LOGDIR="$HOME/jira-sync-logs"
 # if [ ! -d "$LOGDIR" ]; then
@@ -33,9 +35,9 @@ function header {
 # header "Removing old logs"
 # find $LOGDIR -ctime 7 -print -exec rm '{}' \;
 
-github_to_jira=./bin/github-to-jira
-bugzilla_to_jira=./bin/bugzilla-to-jira
-find_closed=./bin/find-closed
+github_to_jira=$BINDIR/github-to-jira
+bugzilla_to_jira=$BINDIR/bugzilla-to-jira
+find_closed=$BINDIR/find-closed
 
 source $HOME/.jira_sync_settings
 
