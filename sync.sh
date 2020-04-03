@@ -1,6 +1,8 @@
 #!/bin/bash
 
-set -e
+set -exu
+
+BINDIR=$(dirname $0)
 
 # Log output automatically
 # LOGDIR="$HOME/jira-sync-logs"
@@ -33,11 +35,13 @@ function header {
 # header "Removing old logs"
 # find $LOGDIR -ctime 7 -print -exec rm '{}' \;
 
-github_to_jira=./bin/github-to-jira
-bugzilla_to_jira=./bin/bugzilla-to-jira
-find_closed=./bin/find-closed
+github_to_jira=$BINDIR/github-to-jira
+bugzilla_to_jira=$BINDIR/bugzilla-to-jira
+find_closed=$BINDIR/find-closed
 
-source $HOME/.jira_sync_settings
+SETTINGS_FILE=${SETTINGS_FILE:-/etc/jira-sync/settings.sh}
+
+source ${SETTINGS_FILE}
 
 if [ -z "$jira_url" ]; then
     echo "NO JIRA URL SET"
