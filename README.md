@@ -62,5 +62,34 @@ and mark them as closeable, use "find-closed":
 ```
 go get github.com/openshift-metal3/jira-sync/github-to-jira
 go get github.com/openshift-metal3/jira-sync/bugzilla-to-jira
+go get github.com/openshift-metal3/jira-sync/bugzilla-one
 go get github.com/openshift-metal3/jira-sync/find-closed
+```
+
+## Using link_one.sh
+
+To create a single JIRA issue from a BZ, create a file in your home
+directory called `~/.jira_sync_settings`:
+
+```
+jira_user=janedoe
+jira_password='p0t4t03s'
+jira_url=https://issues.redhat.com
+bugzilla_token=your_token
+bugzilla_url=https://bugzilla.redhat.com
+```
+
+To get a bugzilla token, login and go to preferences, API Keys, and
+create one.
+
+Then to create a JIRA from BZ, pass the bug id to link_one.sh:
+
+```
+$ /link_one.sh 1823359
+https://bugzilla.redhat.com/show_bug.cgi?id=1823359 "Openshift 4.4
+Baremetal IPI install fails using external DHCP server on provisioning
+network" CREATED KNIDEPLOY-2069
+https://issues.redhat.com/browse/KNIDEPLOY-2069 Openshift 4.4 Baremetal
+IPI install fails using external DHCP server on provisioning network
+[bugzilla:1823359]
 ```
