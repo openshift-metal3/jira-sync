@@ -138,18 +138,18 @@ $github_to_jira \
     \
     -github-org openshift-metal3
 
-header "Importing bugzilla 'KNI Deploy Install' items"
-$bugzilla_to_jira \
-    -jira-user "$jira_user" \
-    -jira-password "$jira_password" \
-    -jira-url "$jira_url" \
-    -bugzilla-token "$bugzilla_token" \
-    -bugzilla-url "$bugzilla_url" \
-    -jira-project KNIDEPLOY \
-    -jira-component 'KNI Deploy Install' \
-    \
-    -bugzilla-product 'Kubernetes-native Infrastructure' \
-    -bugzilla-component 'Deployment'
+# header "Importing bugzilla 'KNI Deploy Install' items"
+# $bugzilla_to_jira \
+#     -jira-user "$jira_user" \
+#     -jira-password "$jira_password" \
+#     -jira-url "$jira_url" \
+#     -bugzilla-token "$bugzilla_token" \
+#     -bugzilla-url "$bugzilla_url" \
+#     -jira-project KNIDEPLOY \
+#     -jira-component 'KNI Deploy Install' \
+#     \
+#     -bugzilla-product 'Kubernetes-native Infrastructure' \
+#     -bugzilla-component 'Deployment'
 
 header "Reporting on items closed upstream but not in jira"
 $find_closed \
