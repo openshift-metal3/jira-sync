@@ -82,6 +82,8 @@ bugzilla_url=https://bugzilla.redhat.com
 To get a bugzilla token, login and go to preferences, API Keys, and
 create one.
 
+*Note*: For `jira_user` field use the content of the field `Username` in your JIRA -> Profile Summary section (in case you're using the email to login since it could be slightly different)
+
 Then to create a JIRA from BZ, pass the bug id to link_one.sh:
 
 ```
