@@ -48,6 +48,7 @@ func processAllIssues(args syncArgs) error {
 	for _, bugID := range args.bugzillaIDs {
 		q := url.Values{}
 		q.Set("include_fields", "id,summary,description")
+		q.Set("api_key", args.bugzillaToken)
 		parsedURL.RawQuery = q.Encode()
 		parsedURL.Path = fmt.Sprintf("%s/rest/bug/%s", parsedURL.Path, bugID)
 
