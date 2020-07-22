@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -32,7 +33,9 @@ type bug struct {
 }
 
 type bugSet struct {
-	Bugs []bug `json:"bugs"`
+	Error   bool   `json:"error"`
+	Message string `json:"message"`
+	Bugs    []bug  `json:"bugs"`
 }
 
 func processAllIssues(args syncArgs) error {
@@ -72,6 +75,10 @@ func processAllIssues(args syncArgs) error {
 		err = json.Unmarshal(body, &theBugs)
 		if err != nil {
 			return fmt.Errorf("Unable to parse bugzilla response for description: %s: %s", body, err)
+		}
+
+		if theBugs.Error {
+			return errors.New(theBugs.Message)
 		}
 
 		for _, bug := range theBugs.Bugs {
