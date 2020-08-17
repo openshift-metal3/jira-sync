@@ -66,7 +66,7 @@ go get github.com/openshift-metal3/jira-sync/bugzilla-one
 go get github.com/openshift-metal3/jira-sync/find-closed
 ```
 
-## Using link_one.sh
+## Configuring
 
 To create a single JIRA issue from a BZ, create a file in your home
 directory called `~/.jira_sync_settings`:
@@ -78,6 +78,8 @@ jira_url=https://issues.redhat.com
 bugzilla_token=your_token
 bugzilla_url=https://bugzilla.redhat.com
 ```
+
+## Using link_one.sh
 
 To get a bugzilla token, login and go to preferences, API Keys, and
 create one.
@@ -94,4 +96,65 @@ network" CREATED KNIDEPLOY-2069
 https://issues.redhat.com/browse/KNIDEPLOY-2069 Openshift 4.4 Baremetal
 IPI install fails using external DHCP server on provisioning network
 [bugzilla:1823359]
+```
+
+## Using check_pr.sh
+
+To check the status of pull requests associated with a Jira ticket
+tree, create the `~/.jira_sync_settings` file as described above and
+then run `check_pr.sh` with the Jira ticket IDs as argument.
+
+```
+$ ./check_pr.sh KNIDEPLOY-3417 KNIDEPLOY-2109
+
+Bug (Code Review) https://issues.redhat.com/browse/KNIDEPLOY-3417 "root device hints implementation in installer ties installer to BMO API"
+  downstream on master merged: https://github.com/openshift/installer/pull/3952 "baremetal: set the boot mode for hosts based on the input"
+  downstream on master OPEN: https://github.com/openshift/installer/pull/4002 "Bug 1864092: baremetal: copy the implementation of rootdevicehints from baremetal-operator"
+
+Epic (Done) https://issues.redhat.com/browse/KNIDEPLOY-2109 "Enable choosing/overriding install and cleaning disks"
+  upstream on master closed: https://github.com/metal3-io/baremetal-operator/pull/442 "Rootdevicehints added to BMH spec"
+  upstream on master merged: https://github.com/metal3-io/baremetal-operator/pull/495 "root device hints"
+    downstream on master merged: https://github.com/openshift/baremetal-operator/pull/73 "Merge upstream 2020 06 04"
+  downstream on master closed: https://github.com/openshift/installer/pull/3348 "[WIP] baremetal: Allow rootHints to override Host profiles"
+
+  Story (ASSIGNED) https://issues.redhat.com/browse/OSDOCS-1308 "D/S documentation: Admin & Operations"
+    no github links found
+
+  Story (ASSIGNED) https://issues.redhat.com/browse/OSDOCS-1307 "D/S documentation - Install, Configure, Test"
+    no github links found
+
+  Story (ASSIGNED) https://issues.redhat.com/browse/OSDOCS-1306 "D/S documentation: Planning and Pre-reqs"
+    no github links found
+
+  Story (Done) https://issues.redhat.com/browse/KNIDEPLOY-1669 "Support complete set of root device hints [github:metal3-io:baremetal-operator:400]"
+    upstream on master merged: https://github.com/metal3-io/baremetal-operator/pull/495 "root device hints"
+      downstream on master merged: https://github.com/openshift/baremetal-operator/pull/73 "Merge upstream 2020 06 04"
+
+    Sub-task (Done) https://issues.redhat.com/browse/KNIDEPLOY-2283 "upstream metal3 changes in BMO"
+      upstream on master merged: https://github.com/metal3-io/baremetal-operator/pull/495 "root device hints"
+        downstream on master merged: https://github.com/openshift/baremetal-operator/pull/73 "Merge upstream 2020 06 04"
+      upstream on master merged: https://github.com/metal3-io/baremetal-operator/pull/544 "add minimum validation for root device hint size"
+        downstream on master merged: https://github.com/openshift/baremetal-operator/pull/73 "Merge upstream 2020 06 04"
+
+    Sub-task (Done) https://issues.redhat.com/browse/KNIDEPLOY-2284 "merge BMO changes downstream"
+      downstream on master merged: https://github.com/openshift/baremetal-operator/pull/73 "Merge upstream 2020 06 04"
+
+    Sub-task (Done) https://issues.redhat.com/browse/KNIDEPLOY-2285 "installer changes to add root device hints"
+      downstream on master closed: https://github.com/openshift/installer/pull/3348 "[WIP] baremetal: Allow rootHints to override Host profiles"
+      downstream on master merged: https://github.com/openshift/installer/pull/3795 "Bug 1805237: baremetal: Allow rootDeviceHints to override Host profiles"
+
+    Sub-task (Done) https://issues.redhat.com/browse/KNIDEPLOY-2301 "update BMO in CAPBM in master"
+      downstream on master merged: https://github.com/openshift/cluster-api-provider-baremetal/pull/74 "update baremetalhost type with root device hints fields"
+
+    Sub-task (Done) https://issues.redhat.com/browse/KNIDEPLOY-2302 "backport BMO changes to 4.5 branch"
+      no github links found
+
+    Sub-task (Done) https://issues.redhat.com/browse/KNIDEPLOY-2303 "backport CAPBM changes to 4.5"
+      no github links found
+
+    Sub-task (Done) https://issues.redhat.com/browse/KNIDEPLOY-2319 "update CAPBM to look at BMO in openshift org"
+      downstream on master merged: https://github.com/openshift/cluster-api-provider-baremetal/pull/76 "update baremetal-operator module source location"
+
+    Sub-task (Done) https://issues.redhat.com/browse/KNIDEPLOY-2320 "test provisioning control plane and workers with non-default root hints"
+      no github links found
 ```
