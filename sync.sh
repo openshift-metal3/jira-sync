@@ -3,6 +3,7 @@
 set -eu
 
 BINDIR=$(dirname $0)
+source ${BINDIR}/lib.sh
 
 echo "Starting $(date +%F-%H%M%S)"
 
