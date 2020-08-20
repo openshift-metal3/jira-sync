@@ -131,7 +131,9 @@ func reportClosedIssues(args syncArgs) error {
 					continue
 				}
 
-				isClosed = bz.Bugs[0].Status == "CLOSED"
+				if len(bz.Bugs) >= 1 {
+					isClosed = bz.Bugs[0].Status == "CLOSED"
+				}
 
 			default:
 				fmt.Fprintf(os.Stderr, "ERROR:Could not parse %q\n", match[0])
