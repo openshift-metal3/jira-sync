@@ -8,5 +8,5 @@ go run ./pr-check/main.go \
     -jira-user "$jira_user" \
     -jira-password "$jira_password" \
     -jira-url "$jira_url" \
-    -bugzilla-token "$github_token" \
+    -github-token "$github_token" \
     $@
