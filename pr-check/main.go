@@ -543,7 +543,7 @@ func processIssues(settings *appSettings, clients *serviceClients, cache *cache,
 }
 
 func main() {
-	token := flag.String("bugzilla-token", "", "the API token")
+	token := flag.String("github-token", "", "the API token")
 	username := flag.String("jira-user", "", "the username")
 	password := flag.String("jira-password", "", "the password")
 	downstreamOrg := flag.String("downstream-org", "openshift",
