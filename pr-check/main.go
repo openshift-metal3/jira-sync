@@ -42,9 +42,27 @@ type appSettings struct {
 	verbose       bool
 }
 
-type serviceClients struct {
-	jira   *jira.Client
-	github *github.Client
+func (settings *appSettings) JiraClient() (*jira.Client, error) {
+	tp := jira.BasicAuthTransport{
+		Username: settings.Jira.User,
+		Password: settings.Jira.Password,
+	}
+
+	jiraClient, err := jira.NewClient(tp.Client(), settings.Jira.URL)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create jira client")
+	}
+	return jiraClient, nil
+}
+
+func (settings *appSettings) GithubClient() (*github.Client, error) {
+	ctx := context.Background()
+	tokenSource := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: settings.Github.Token},
+	)
+	oauthClient := oauth2.NewClient(ctx, tokenSource)
+	githubClient := github.NewClient(oauthClient)
+	return githubClient, nil
 }
 
 type repoPRCache struct {
@@ -88,13 +106,18 @@ type issueResult struct {
 
 const githubPageSize int = 50
 
-func (c *cache) getDetails(settings *appSettings, clients *serviceClients, org, repo string) (*repoPRCache, error) {
+func (c *cache) getDetails(settings *appSettings, org, repo string) (*repoPRCache, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	ctx := context.Background()
 	repoKey := fmt.Sprintf("%s/%s", org, repo)
 	prCache, ok := c.pullRequestsByRepo[repoKey]
+
+	ghClient, err := settings.GithubClient()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create github client")
+	}
 
 	if !ok {
 		prCache = repoPRCache{
@@ -112,7 +135,7 @@ func (c *cache) getDetails(settings *appSettings, clients *serviceClients, org, 
 
 		fmt.Printf("building cache of PRs for %s/%s\n", org, repo)
 		for {
-			prs, response, err := clients.github.PullRequests.List(ctx, org, repo, opts)
+			prs, response, err := ghClient.PullRequests.List(ctx, org, repo, opts)
 			if err != nil {
 				return nil, errors.Wrap(err,
 					fmt.Sprintf("could not get pull requests for %s", repoKey))
@@ -120,7 +143,7 @@ func (c *cache) getDetails(settings *appSettings, clients *serviceClients, org, 
 			prCache.pullRequests = append(prCache.pullRequests, prs...)
 
 			for _, pr := range prs {
-				commits, _, err := clients.github.PullRequests.ListCommits(
+				commits, _, err := ghClient.PullRequests.ListCommits(
 					ctx, org, repo, *pr.Number, nil)
 				if err != nil {
 					return nil, errors.Wrap(err,
@@ -211,11 +234,11 @@ func getLinks(issue *jira.Issue) []string {
 	return results
 }
 
-func getPRStatus(settings *appSettings, clients *serviceClients, pullRequest *github.PullRequest) (pullRequestWithStatus, error) {
+func getPRStatus(settings *appSettings, ghClient *github.Client, pullRequest *github.PullRequest) (pullRequestWithStatus, error) {
 	result := pullRequestWithStatus{pull: pullRequest}
 	ctx := context.Background()
 	result.status = *pullRequest.State
-	isMerged, _, err := clients.github.PullRequests.IsMerged(ctx,
+	isMerged, _, err := ghClient.PullRequests.IsMerged(ctx,
 		*pullRequest.Base.Repo.Owner.Login, *pullRequest.Base.Repo.Name, *pullRequest.Number)
 	if err != nil {
 		return result, errors.Wrap(err,
@@ -244,9 +267,14 @@ func parsePRURL(url string) (org, repo string, id int, err error) {
 	return
 }
 
-func processOneLink(settings *appSettings, clients *serviceClients, cache *cache, url string) (*linkResult, error) {
+func processOneLink(settings *appSettings, cache *cache, url string) (*linkResult, error) {
 	if settings.verbose {
 		fmt.Fprintf(os.Stderr, "getting details for %s\n", url)
+	}
+
+	ghClient, err := settings.GithubClient()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create github client")
 	}
 
 	result := &linkResult{
@@ -265,14 +293,14 @@ func processOneLink(settings *appSettings, clients *serviceClients, cache *cache
 	result.repo = repo
 	result.id = id
 
-	pullRequest, _, err := clients.github.PullRequests.Get(ctx,
+	pullRequest, _, err := ghClient.PullRequests.Get(ctx,
 		result.org, result.repo, result.id)
 	if err != nil {
 		return nil, errors.Wrap(err,
 			fmt.Sprintf("could not fetch pull request %q", url))
 	}
 
-	prWithStatus, err := getPRStatus(settings, clients, pullRequest)
+	prWithStatus, err := getPRStatus(settings, ghClient, pullRequest)
 	if err != nil {
 		return nil, errors.Wrap(err,
 			fmt.Sprintf("could not get status of %s", *pullRequest.HTMLURL))
@@ -289,7 +317,7 @@ func processOneLink(settings *appSettings, clients *serviceClients, cache *cache
 		return result, nil
 	}
 
-	commits, _, err := clients.github.PullRequests.ListCommits(
+	commits, _, err := ghClient.PullRequests.ListCommits(
 		ctx, result.org, result.repo, result.id, nil)
 	if err != nil {
 		return nil, errors.Wrap(err,
@@ -302,7 +330,7 @@ func processOneLink(settings *appSettings, clients *serviceClients, cache *cache
 
 		// look for pull requests containing the same commits via
 		// the github API
-		otherPRs, response, err := clients.github.PullRequests.ListPullRequestsWithCommit(
+		otherPRs, response, err := ghClient.PullRequests.ListPullRequestsWithCommit(
 			ctx, settings.DownstreamOrg, result.repo, *c.SHA, nil)
 		if err != nil {
 			if response.StatusCode == http.StatusNotFound {
@@ -334,8 +362,7 @@ func processOneLink(settings *appSettings, clients *serviceClients, cache *cache
 		// look in the cache for commit messages that include the
 		// SHA, indicating a reference during a cherry-pick
 		if len(otherIDs) == 0 {
-			cachedDetails, err := cache.getDetails(settings, clients,
-				settings.DownstreamOrg, repo)
+			cachedDetails, err := cache.getDetails(settings, settings.DownstreamOrg, repo)
 			if err != nil {
 				return nil, errors.Wrap(err,
 					fmt.Sprintf("could not build cache of details for %s/%s",
@@ -355,7 +382,7 @@ func processOneLink(settings *appSettings, clients *serviceClients, cache *cache
 		}
 	}
 	if len(otherLinks) > 0 {
-		otherResults, err := processLinks(settings, clients, cache, otherLinks)
+		otherResults, err := processLinks(settings, cache, otherLinks)
 		if err != nil {
 			return nil, errors.Wrap(err,
 				fmt.Sprintf("could not process %s", url))
@@ -366,7 +393,7 @@ func processOneLink(settings *appSettings, clients *serviceClients, cache *cache
 	return result, nil
 }
 
-func processLinks(settings *appSettings, clients *serviceClients, cache *cache, links []string) ([]*linkResult, error) {
+func processLinks(settings *appSettings, cache *cache, links []string) ([]*linkResult, error) {
 
 	var wg sync.WaitGroup
 	resultChan := make(chan *linkResult)
@@ -375,7 +402,7 @@ func processLinks(settings *appSettings, clients *serviceClients, cache *cache, 
 		wg.Add(1)
 		go func(url string, ch chan<- *linkResult) {
 			defer wg.Done()
-			result, err := processOneLink(settings, clients, cache, url)
+			result, err := processOneLink(settings, cache, url)
 			if err != nil {
 				fmt.Printf("failed to get details for %s: %s\n", url, err)
 				return
@@ -428,13 +455,19 @@ func showLinkResults(settings *appSettings, results []*linkResult, indent string
 	}
 }
 
-func processOneIssue(settings *appSettings, clients *serviceClients, cache *cache, issueID string) (*issueResult, error) {
+func processOneIssue(settings *appSettings, cache *cache, issueID string) (*issueResult, error) {
 	if settings.verbose {
 		fmt.Fprintf(os.Stderr, "getting details for %s\n", issueID)
 	}
+
+	jiraClient, err := settings.JiraClient()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create jira client")
+	}
+
 	result := &issueResult{}
 
-	issue, _, err := clients.jira.Issue.Get(issueID, nil)
+	issue, _, err := jiraClient.Issue.Get(issueID, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("error processing issue %q", issueID))
 	}
@@ -442,7 +475,7 @@ func processOneIssue(settings *appSettings, clients *serviceClients, cache *cach
 
 	links := getLinks(issue)
 	if len(links) != 0 {
-		linkResults, err := processLinks(settings, clients, cache, links)
+		linkResults, err := processLinks(settings, cache, links)
 		if err != nil {
 			return nil, errors.Wrap(err,
 				fmt.Sprintf("failed processing links in %s", issueID))
@@ -460,7 +493,7 @@ func processOneIssue(settings *appSettings, clients *serviceClients, cache *cach
 			searchTerm = "Parent Link"
 		}
 		search := fmt.Sprintf("\"%s\" = %s", searchTerm, issueID)
-		children, _, err := clients.jira.Issue.Search(search, &searchOptions)
+		children, _, err := jiraClient.Issue.Search(search, &searchOptions)
 		if err != nil {
 			return nil, errors.Wrap(err,
 				fmt.Sprintf("could not find sub-issues related to %s", issueID))
@@ -470,13 +503,13 @@ func processOneIssue(settings *appSettings, clients *serviceClients, cache *cach
 		for i, child := range children {
 			childIDs[i] = child.Key
 		}
-		result.children = processIssues(settings, clients, cache, childIDs)
+		result.children = processIssues(settings, cache, childIDs)
 	case "Story":
 		childIDs := make([]string, len(issue.Fields.Subtasks))
 		for i, task := range issue.Fields.Subtasks {
 			childIDs[i] = task.Key
 		}
-		result.children = processIssues(settings, clients, cache, childIDs)
+		result.children = processIssues(settings, cache, childIDs)
 	default:
 	}
 	return result, nil
@@ -504,7 +537,7 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func processIssues(settings *appSettings, clients *serviceClients, cache *cache, ids []string) []*issueResult {
+func processIssues(settings *appSettings, cache *cache, ids []string) []*issueResult {
 
 	var wg sync.WaitGroup
 	resultChan := make(chan *issueResult)
@@ -513,7 +546,7 @@ func processIssues(settings *appSettings, clients *serviceClients, cache *cache,
 		wg.Add(1)
 		go func(issueID string, ch chan<- *issueResult) {
 			defer wg.Done()
-			result, err := processOneIssue(settings, clients, cache, issueID)
+			result, err := processOneIssue(settings, cache, issueID)
 			if err != nil {
 				fmt.Printf("ERROR: %s\n", err)
 				return
@@ -581,34 +614,23 @@ func main() {
 		verbose:       *verbose,
 	}
 
-	tp := jira.BasicAuthTransport{
-		Username: settings.Jira.User,
-		Password: settings.Jira.Password,
-	}
-
-	jiraClient, err := jira.NewClient(tp.Client(), settings.Jira.URL)
+	_, err := settings.JiraClient()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not create client: %v", err)
+		fmt.Fprintf(os.Stderr, "Could not create jira client: %v\n", err)
 		os.Exit(1)
 	}
 
-	ctx := context.Background()
-	tokenSource := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: settings.Github.Token},
-	)
-	oauthClient := oauth2.NewClient(ctx, tokenSource)
-	githubClient := github.NewClient(oauthClient)
-
-	clients := &serviceClients{
-		jira:   jiraClient,
-		github: githubClient,
+	_, err = settings.GithubClient()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not create githubclient: %v\n", err)
+		os.Exit(1)
 	}
 
 	cache := &cache{
 		pullRequestsByRepo: make(map[string]repoPRCache),
 	}
 
-	results := processIssues(settings, clients, cache, flag.Args())
+	results := processIssues(settings, cache, flag.Args())
 	for _, result := range results {
 		showOneIssueResult(settings, result, "")
 	}
