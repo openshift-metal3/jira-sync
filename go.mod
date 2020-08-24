@@ -3,7 +3,7 @@ module github.com/openshift-metal3/jira-sync
 go 1.14
 
 require (
-	github.com/andygrunwald/go-jira v1.10.0
+	github.com/andygrunwald/go-jira v1.12.0
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/google/go-github v17.0.0+incompatible
