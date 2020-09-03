@@ -36,10 +36,11 @@ type githubSettings struct {
 }
 
 type appSettings struct {
-	Jira          jiraSettings   `yaml:"jira"`
-	Github        githubSettings `yaml:"github"`
-	DownstreamOrg string         `yaml:"downstreamOrg"`
-	verbose       bool
+	Jira            jiraSettings   `yaml:"jira"`
+	Github          githubSettings `yaml:"github"`
+	DownstreamOrg   string         `yaml:"downstreamOrg"`
+	includeObsolete bool
+	verbose         bool
 }
 
 func (settings *appSettings) JiraClient() (*jira.Client, error) {
@@ -516,6 +517,9 @@ func processOneIssue(settings *appSettings, cache *cache, issueID string) (*issu
 }
 
 func showOneIssueResult(settings *appSettings, result *issueResult, indent string) {
+	if result.issue.Fields.Status.Name == "Obsolete" && !settings.includeObsolete {
+		return
+	}
 	fmt.Printf("\n%s%s\n", indent, issueTitleLine(result.issue, settings.Jira.URL))
 	if len(result.linkResults) == 0 {
 		fmt.Printf("%s  no github links found\n", indent)
@@ -582,6 +586,7 @@ func main() {
 	downstreamOrg := flag.String("downstream-org", "openshift",
 		"the downstream github organization")
 	jiraURL := flag.String("jira-url", "", "the jira server URL")
+	includeObsolete := flag.Bool("include-obsolete", false, "include obsolete tickets")
 	verbose := flag.Bool("v", false, "verbose mode")
 
 	flag.Parse()
@@ -610,8 +615,9 @@ func main() {
 		Github: githubSettings{
 			Token: *token,
 		},
-		DownstreamOrg: *downstreamOrg,
-		verbose:       *verbose,
+		DownstreamOrg:   *downstreamOrg,
+		verbose:         *verbose,
+		includeObsolete: *includeObsolete,
 	}
 
 	_, err := settings.JiraClient()
