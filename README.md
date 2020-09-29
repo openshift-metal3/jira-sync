@@ -69,7 +69,16 @@ go get github.com/openshift-metal3/jira-sync/find-closed
 ## Configuring
 
 To create a single JIRA issue from a BZ, create a file in your home
-directory called `~/.jira_sync_settings`:
+directory called `~/.jira_sync_settings`.
+
+Your `jira_user` name is visible in the *Username* field on the
+[profile page](https://issues.redhat.com/secure/ViewProfile.jspa) when
+you are logged in. The value is *not* your email address.
+
+Your `jira_password` is your kerberos password.
+
+To get a `bugzilla_token`, login to https://bugzilla.redhat.com, go to
+Preferences->API Keys, and create one.
 
 ```
 jira_user=janedoe
@@ -80,11 +89,6 @@ bugzilla_url=https://bugzilla.redhat.com
 ```
 
 ## Using link_one.sh
-
-To get a bugzilla token, login and go to preferences, API Keys, and
-create one.
-
-*Note*: For `jira_user` field use the content of the field `Username` in your JIRA -> Profile Summary section (in case you're using the email to login since it could be slightly different)
 
 Then to create a JIRA from BZ, pass the bug id to link_one.sh:
 
