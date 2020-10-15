@@ -219,7 +219,7 @@ func uniqueStrings(in []string) []string {
 	return out
 }
 
-func getLinks(issue *jira.Issue) []string {
+func getLinks(issue *jira.Issue, client *jira.Client) ([]string, error) {
 	results := []string{}
 
 	results = append(results,
@@ -232,7 +232,20 @@ func getLinks(issue *jira.Issue) []string {
 		}
 	}
 
-	return results
+	remoteLinks, _, err := client.Issue.GetRemoteLinks(issue.ID)
+	if err != nil {
+		return nil, errors.Wrap(err,
+			fmt.Sprintf("failed to get remote links for %s", issue.ID))
+	}
+	if remoteLinks != nil {
+		for _, link := range *remoteLinks {
+			if pullRequestURLPattern.MatchString(link.Object.URL) {
+				results = append(results, link.Object.URL)
+			}
+		}
+	}
+
+	return results, nil
 }
 
 func getPRStatus(settings *appSettings, ghClient *github.Client, pullRequest *github.PullRequest) (pullRequestWithStatus, error) {
@@ -474,7 +487,10 @@ func processOneIssue(settings *appSettings, cache *cache, issueID string) (*issu
 	}
 	result.issue = issue
 
-	links := getLinks(issue)
+	links, err := getLinks(issue, jiraClient)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("could not get links for %q", issueID))
+	}
 	if len(links) != 0 {
 		linkResults, err := processLinks(settings, cache, links)
 		if err != nil {
