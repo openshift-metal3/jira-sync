@@ -447,11 +447,11 @@ func showLinkResults(settings *appSettings, results []*linkResult, indent string
 	for _, result := range results {
 
 		if result.org == settings.DownstreamOrg {
-			fmt.Printf("%sdownstream %s\n", indent, result.prWithStatus)
+			fmt.Printf("%s* downstream %s\n", indent, result.prWithStatus)
 			continue
 		}
 
-		fmt.Printf("%supstream %s\n", indent, result.prWithStatus)
+		fmt.Printf("%s* upstream %s\n", indent, result.prWithStatus)
 
 		if result.prWithStatus.status == "closed" {
 			// We don't care if there is no matching downstream PR if
@@ -460,7 +460,7 @@ func showLinkResults(settings *appSettings, results []*linkResult, indent string
 		}
 
 		if len(result.others) == 0 {
-			fmt.Printf("%s  downstream: no matching pull requests found in %s/%s\n",
+			fmt.Printf("%s* downstream: no matching pull requests found in %s/%s\n",
 				indent, settings.DownstreamOrg, result.repo,
 			)
 			continue
@@ -536,9 +536,9 @@ func showOneIssueResult(settings *appSettings, result *issueResult, indent strin
 	if result.issue.Fields.Status.Name == "Obsolete" && !settings.includeObsolete {
 		return
 	}
-	fmt.Printf("\n%s%s\n", indent, issueTitleLine(result.issue, settings.Jira.URL))
+	fmt.Printf("\n%s* %s\n", indent, issueTitleLine(result.issue, settings.Jira.URL))
 	if len(result.linkResults) == 0 {
-		fmt.Printf("%s  no github links found\n", indent)
+		fmt.Printf("%s* no github links found\n", indent+"  ")
 	} else {
 		showLinkResults(settings, result.linkResults, indent+"  ")
 	}
